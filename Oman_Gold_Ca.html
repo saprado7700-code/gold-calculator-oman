@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حاسبة أسعار الذهب (سوق عُمان) - تحديث مباشر</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLMD/CDt+VjPqV5X3GmgzNwH2S/L6Fp9i8Kk7n7eG/H2gD5b2p3Fw5O5G/7L2uG8w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* التنسيقات المُحسنة للهاتف */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFFDF7; 
+            overflow-y: hidden; 
+        }
+        .calculator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-height: 95vh; 
+            overflow-y: auto; 
+            
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.08);
+            background-color: #FFEF00; 
+        }
+
+        /* هذا الجزء يزيل أسهم التمرير في حقول الأرقام */
+        input[type="number"] {
+            -moz-appearance: textfield; 
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        /* التنسيقات الأخرى */
+        .text-theme-dark {
+            color: #585542; 
+        }
+        .display {
+            background-color: #F4F2E7; 
+            font-size: 2rem; 
+            font-weight: 600;
+            color: #585542; 
+        }
+        .input-style {
+            background-color: #FFFFFF;
+            color: #1f2937;
+            border: 2px solid #E8E5D3;
+        }
+        .input-style:focus {
+             --tw-ring-color: #D4AF37;
+             --tw-border-opacity: 1;
+             border-color: #D4AF37;
+        }
+    </style>
+</head>
+<body class="p-4"> 
+
+    <div id="gold-calculator" class="calculator w-full max-w-xl rounded-xl p-6 md:p-8">
+        <h1 class="text-3xl font-extrabold text-theme-dark mb-4 text-center">
+            حاسبة أسعار الذهب (سوق عُمان)
+        </h1>
+        
+        <p id="live-update-info" class="text-sm text-theme-dark text-center mb-6 font-medium flex items-center justify-center space-x-2 space-x-reverse">
+            <i id="price-status-icon" class="fa-solid fa-circle text-gray-400 text-xs"></i>
+            <span id="update-text">جاري جلب الأسعار...</span>
+        </p>
+
+        <div class="display text-right p-4 mb-6 rounded-lg h-16 flex items-center justify-end shadow-inner">
+            <span id="result-span" class="w-full truncate">أدخل القيم للحساب...</span>
+        </div>
+
+        <div class="space-y-4">
+            
+            <label class="block text-theme-dark font-medium">
+                عيار الذهب (Purity)
+                <select id="goldKarat" 
+                    class="w-full mt-1 p-3 rounded-lg outline-none transition duration-150 text-right input-style">
+                    <option value="24">24 قيراط</option>
+                    <option value="22">22 قيراط</option>
+                    <option value="21">21 قيراط</option>
+                    <option value="18">18 قيراط</option>
+                </select>
+            </label>
+            
+            <label class="block text-theme-dark font-medium">
+                وزن الذهب (جرام)
+                <input id="weight" type="number" step="0.001" value="10.000" 
+                    class="w-full mt-1 p-3 rounded-lg text-right input-style" 
+                    placeholder="مثال: 10.000">
+            </label>
+            
+            <label class="block text-theme-dark font-medium">
+                رسوم التصنيع / أجور الصياغة (بالريال العماني - مبلغ ثابت)
+                <input id="makingChargesValue" type="number" step="0.001" value="50.000" 
+                    class="w-full mt-1 p-3 rounded-lg text-right input-style" 
+                    placeholder="مثال: 50.000">
+            </label>
+
+            <label class="block text-theme-dark font-medium">
+                نسبة ضريبة القيمة المضافة (VAT)
+                <select id="vatRateSelect" 
+                    class="w-full mt-1 p-3 rounded-lg outline-none transition duration-150 text-right input-style">
+                    <option value="0.05">5% (المعيار للمجوهرات)</option>
+                    <option value="0.00">0% (الذهب الاستثماري والسبائك)</option>
+                </select>
+            </label>
+
+        </div>
+        
+        <p class="text-xs text-theme-dark mt-4 text-center">
+            *العملة هي **الريال العماني (﷼)**.
+        </p>
+    </div>
+
+    <script>
+        // العناصر والثوابت
+        const resultSpan = document.getElementById('result-span');
+        // تم إزالة pricePerGramInput من هنا
+        const weightInput = document.getElementById('weight');
+        const goldKaratSelect = document.getElementById('goldKarat');
+        const vatRateSelect = document.getElementById('vatRateSelect');
+        const makingChargesValueInput = document.getElementById('makingChargesValue');
+        const liveUpdateText = document.getElementById('update-text');
+        const priceStatusIcon = document.getElementById('price-status-icon');
+
+        const USD_PER_OMR = 2.6008; 
+        const GOLD_Grams_PER_OUNCE = 31.1035; 
+        
+        let currentGoldPriceUSD_Ounce = 2350.00; 
+        let lastSuccessfulGoldPriceUSD_Ounce = 2350.00; 
+        
+        const KARAT_PURITY = {
+            '24': 1.000,
+            '22': 0.9167,
+            '21': 0.875,
+            '18': 0.750
+        };
+
+        // 1. تحديث التاريخ والوقت 
+        const updateLiveTime = () => {
+            const now = new Date();
+            const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            const formattedDate = now.toLocaleDateString('ar-OM', dateOptions);
+            const formattedTime = now.toLocaleTimeString('ar-OM', timeOptions);
+            return `آخر تحديث: ${formattedDate} ${formattedTime}`;
+        };
+
+        // 2. دالة جلب السعر من API 
+        const fetchGoldPrice = async () => {
+            const API_KEY = 'b7782152c6c4e316cb1eb6c45c0e54a2';
+            const API_URL = `https://api.metalpriceapi.com/v1/latest?api_key=${API_KEY}&base=USD&currencies=XAU`; 
+            
+            priceStatusIcon.classList.remove('text-green-500', 'text-red-500');
+            priceStatusIcon.classList.add('text-yellow-500', 'fa-spin');
+            liveUpdateText.textContent = "جاري جلب الأسعار...";
+
+            try {
+                // الفحص لضمان التشغيل عبر Live Server
+                if (!window.location.protocol.startsWith('http')) {
+                    throw new Error("Not running on a server. Using default price.");
+                }
+                
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error(`API returned status ${response.status}`);
+                const data = await response.json();
+                
+                if (data.rates && data.rates.XAU) {
+                    currentGoldPriceUSD_Ounce = 1 / data.rates.XAU; 
+                    lastSuccessfulGoldPriceUSD_Ounce = currentGoldPriceUSD_Ounce;
+                    
+                    priceStatusIcon.classList.remove('text-yellow-500', 'fa-spin', 'text-red-500');
+                    priceStatusIcon.classList.add('text-green-500');
+                    liveUpdateText.textContent = `${updateLiveTime()} | الأسعار محدثة.`;
+                } else {
+                    throw new Error("Invalid API response format.");
+                }
+
+            } catch (error) {
+                // فشل الجلب: نستخدم آخر سعر ناجح مخزّن
+                currentGoldPriceUSD_Ounce = lastSuccessfulGoldPriceUSD_Ounce; 
+                
+                priceStatusIcon.classList.remove('text-yellow-500', 'fa-spin', 'text-green-500');
+                priceStatusIcon.classList.add('text-red-500');
+                liveUpdateText.textContent = `${updateLiveTime()} | فشل الجلب (يستخدم آخر سعر ناجح).`;
+                console.error("خطأ في جلب سعر الذهب المباشر (باستخدام آخر سعر ناجح):", error);
+            }
+
+            // تحديث الواجهة والنتيجة
+            updatePriceBasedOnKarat();
+        };
+
+        // 3. دالة مساعدة لحساب سعر الجرام بالريال العماني
+        const calculateOMRPerGram = (karat) => {
+            const purityFactor = KARAT_PURITY[karat];
+            
+            // 1. سعر الذهب عيار 24 قيراط بالدولار للجرام
+            const price24k_USD_Gram = currentGoldPriceUSD_Ounce / GOLD_Grams_PER_OUNCE;
+            
+            // 2. سعر العيار المختار بالدولار للجرام
+            const priceKarat_USD_Gram = price24k_USD_Gram * purityFactor;
+            
+            // 3. التحويل النهائي إلى ريال عماني للجرام (OMR/Gram)
+            return priceKarat_USD_Gram / USD_PER_OMR;
+        };
+
+        // 4. تحديث قائمة العيارات وتنفيذ الحساب
+        const updatePriceBasedOnKarat = () => {
+            const options = goldKaratSelect.querySelectorAll('option');
+            options.forEach(option => {
+                const karatValue = option.value;
+                const price_omr = calculateOMRPerGram(karatValue);
+
+                // تحديث خيارات العيار لتظهر السعر بالريال العماني (للإشارة)
+                option.textContent = `${karatValue} قيراط (﷼ ${price_omr.toFixed(3)})`; 
+            });
+
+            calculateGoldPrice();
+        };
+
+        // 5. دالة تنفيذ حساب سعر الذهب (النتيجة النهائية بالريال العماني)
+        const calculateGoldPrice = () => {
+            const selectedKarat = goldKaratSelect.value;
+            // يتم جلب سعر الجرام مباشرة من الدالة المساعدة
+            const pricePerGram = calculateOMRPerGram(selectedKarat) || 0; 
+            
+            const weight = parseFloat(weightInput.value) || 0;
+            const makingCharges = parseFloat(makingChargesValueInput.value) || 0; 
+            const currencyUnit = 'ريال عُماني'; 
+            const vatRate = parseFloat(vatRateSelect.value) || 0; 
+            
+            if (pricePerGram <= 0 || weight <= 0) {
+                resultSpan.textContent = "جاري جلب السعر... أو أدخل وزنًا صالحًا";
+                return;
+            }
+
+            try {
+                const goldCost = pricePerGram * weight;
+                const subTotal = goldCost + makingCharges;
+                const vatAmount = subTotal * vatRate;
+                const totalPrice = subTotal + vatAmount;
+
+                const formattedPrice = totalPrice.toFixed(3);
+                
+                resultSpan.textContent = `${formattedPrice} ${currencyUnit}`;
+
+            } catch (error) {
+                resultSpan.textContent = "خطأ في الحساب";
+            }
+        };
+
+        // --- ربط الأحداث والتشغيل الأولي ---
+        goldKaratSelect.addEventListener('change', updatePriceBasedOnKarat);
+        const inputs = [weightInput, goldKaratSelect, vatRateSelect, makingChargesValueInput];
+        inputs.forEach(element => {
+            element.addEventListener('input', calculateGoldPrice);
+            element.addEventListener('change', calculateGoldPrice); 
+        });
+        
+        window.onload = () => {
+            fetchGoldPrice();
+            // التحديث كل ساعة (3600000 مللي ثانية) لتوفير استهلاك الـ API
+            setInterval(() => {
+                if(priceStatusIcon.classList.contains('text-green-500')) {
+                    liveUpdateText.textContent = `${updateLiveTime()} | الأسعار محدثة.`;
+                } else {
+                    liveUpdateText.textContent = `${updateLiveTime()} | فشل الجلب (يستخدم آخر سعر ناجح).`;
+                }
+            }, 900000); // تحديث كل ساعة لتوفير API
+        };
+    </script>
+</body>
+</html>
