@@ -201,11 +201,7 @@
             liveUpdateText.textContent = "جاري جلب الأسعار...";
 
             try {
-                // *** تم التعليق على هذا الشرط لتسهيل تشغيل الكود من Live Server في VS Code ***
-                // if (!window.location.protocol.startsWith('http')) {
-                //     throw new Error("Not running on a server. Using default price.");
-                // }
-                
+                        
                 const response = await fetch(API_URL);
                 if (!response.ok) throw new Error(`API returned status ${response.status}`);
                 const data = await response.json();
@@ -341,3 +337,4 @@
     </script>
 </body>
 </html>
+
