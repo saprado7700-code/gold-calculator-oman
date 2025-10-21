@@ -1,9 +1,5 @@
-<div>
-<br class="Apple-interchange-newline">
 <!DOCTYPE html>
-<br>
 <html lang="ar" dir="rtl">
-<br>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -104,12 +100,12 @@
             <div class="flex space-x-4 space-x-reverse mb-4">
                 <label class="inline-flex items-center">
                     <input type="radio" name="chargesType" value="perGram" checked 
-                           class="form-radio text-yellow-600 h-4 w-4" id="chargeTypePerGram">
+                               class="form-radio text-yellow-600 h-4 w-4" id="chargeTypePerGram">
                     <span class="mr-2 text-sm font-medium text-theme-dark">لكل جرام (ريال/جرام)</span>
                 </label>
                 <label class="inline-flex items-center">
                     <input type="radio" name="chargesType" value="fixed" 
-                           class="form-radio text-yellow-600 h-4 w-4" id="chargeTypeFixed">
+                               class="form-radio text-yellow-600 h-4 w-4" id="chargeTypeFixed">
                     <span class="mr-2 text-sm font-medium text-theme-dark">مبلغ ثابت إجمالي (ريال)</span>
                 </label>
             </div>
@@ -117,8 +113,8 @@
             <label class="block text-theme-dark font-medium" id="makingChargesLabel">
                 قيمة رسوم التصنيع (ريال/جرام)
                 <input id="makingChargesValue" type="number" step="0.001" value="3.861" 
-                       class="w-full mt-1 p-3 rounded-lg text-right input-style" 
-                       placeholder="مثال: 3.861">
+                        class="w-full mt-1 p-3 rounded-lg text-right input-style" 
+                        placeholder="مثال: 3.861">
             </label>
             <label class="block text-theme-dark font-medium">
                 نسبة ضريبة القيمة المضافة (VAT)
@@ -142,7 +138,8 @@
         const weightInput = document.getElementById('weight');
         const goldKaratSelect = document.getElementById('goldKarat');
         const vatRateSelect = document.getElementById('vatRateSelect');
-        const makingChargesValueInput = document.getElementById('makingChargesValue');
+        // تم تعريفه كـ let لأنه سيتم إعادة ربطه
+        let makingChargesValueInput = document.getElementById('makingChargesValue'); 
         const liveUpdateText = document.getElementById('update-text');
         const priceStatusIcon = document.getElementById('price-status-icon');
         
@@ -155,6 +152,7 @@
         const USD_PER_OMR = 2.6008; 
         const GOLD_Grams_PER_OUNCE = 31.1035; 
         
+        // *تنبيه: هذا هو السعر الافتراضي الذي سيستخدمه الكود في حال فشل الاتصال بالـ API*
         let currentGoldPriceUSD_Ounce = 2350.00; 
         let lastSuccessfulGoldPriceUSD_Ounce = 2350.00; 
         
@@ -165,7 +163,7 @@
             '18': 0.750
         };
 
-        // دالة مساعدة لتحديث نص رسوم التصنيع
+        // دالة مساعدة لتحديث نص رسوم التصنيع وإعادة ربط الحقل
         const updateChargesLabel = () => {
             if (chargeTypePerGram.checked) {
                 makingChargesLabel.innerHTML = 'قيمة رسوم التصنيع (<span class="font-bold">ريال/جرام</span>) <input id="makingChargesValue" type="number" step="0.001" value="3.861" class="w-full mt-1 p-3 rounded-lg text-right input-style" placeholder="مثال: 3.861">';
@@ -192,9 +190,10 @@
             return `آخر تحديث: ${formattedDate} ${formattedTime}`;
         };
 
-        // 2. دالة جلب السعر من API (لم يتم تغييرها)
+        // 2. دالة جلب السعر من API
         const fetchGoldPrice = async () => {
-            const API_KEY = 'b7782152c6c4e316cb1eb6c45c0e54a2';
+            // انتبه: لأغراض العرض، المفتاح هنا ظاهر، في تطبيق حقيقي يجب إخفاؤه
+            const API_KEY = 'b7782152c6c4e316cb1eb6c45c0e54a2'; 
             const API_URL = `https://api.metalpriceapi.com/v1/latest?api_key=${API_KEY}&base=USD&currencies=XAU`; 
             
             priceStatusIcon.classList.remove('text-green-500', 'text-red-500');
@@ -202,9 +201,10 @@
             liveUpdateText.textContent = "جاري جلب الأسعار...";
 
             try {
-                if (!window.location.protocol.startsWith('http')) {
-                    throw new Error("Not running on a server. Using default price.");
-                }
+                // *** تم التعليق على هذا الشرط لتسهيل تشغيل الكود من Live Server في VS Code ***
+                // if (!window.location.protocol.startsWith('http')) {
+                //     throw new Error("Not running on a server. Using default price.");
+                // }
                 
                 const response = await fetch(API_URL);
                 if (!response.ok) throw new Error(`API returned status ${response.status}`);
@@ -233,7 +233,7 @@
             updatePriceBasedOnKarat();
         };
 
-        // 3. دالة مساعدة لحساب سعر الجرام بالريال العماني (لم يتم تغييرها)
+        // 3. دالة مساعدة لحساب سعر الجرام بالريال العماني
         const calculateOMRPerGram = (karat) => {
             const purityFactor = KARAT_PURITY[karat];
             
@@ -243,7 +243,7 @@
             return priceKarat_USD_Gram / USD_PER_OMR;
         };
 
-        // 4. تحديث قائمة العيارات وتنفيذ الحساب (لم يتم تغييرها)
+        // 4. تحديث قائمة العيارات وتنفيذ الحساب
         const updatePriceBasedOnKarat = () => {
             const options = goldKaratSelect.querySelectorAll('option');
             options.forEach(option => {
@@ -256,14 +256,14 @@
             calculateGoldPrice();
         };
 
-        // 5. دالة تنفيذ حساب سعر الذهب (المعدلة لدعم الخيارين)
+        // 5. دالة تنفيذ حساب سعر الذهب
         const calculateGoldPrice = () => {
             const selectedKarat = goldKaratSelect.value;
             const pricePerGram = calculateOMRPerGram(selectedKarat) || 0; 
             
             const weight = parseFloat(weightInput.value) || 0;
             // يجب إعادة جلب القيمة في كل مرة بسبب تحديث العنصر في DOM
-            const makingChargesValue = parseFloat(document.getElementById('makingChargesValue').value) || 0; 
+            const chargesValue = parseFloat(document.getElementById('makingChargesValue').value) || 0; 
             
             const isPerGram = chargeTypePerGram.checked; // تحديد طريقة الحساب
             
@@ -276,18 +276,18 @@
             }
 
             try {
-                let goldCost = pricePerGram * weight; // تكلفة الذهب الصافي (دائما محسوبة)
+                let goldCost = pricePerGram * weight; // تكلفة الذهب الصافي
                 let subTotal; // الإجمالي قبل الضريبة
                 let makingCost; // قيمة التصنيع الكلية
 
                 if (isPerGram) {
-                    // الخيار 1: رسوم التصنيع لكل جرام (الطريقة المكتشفة)
-                    makingCost = makingChargesValue * weight;
+                    // رسوم التصنيع لكل جرام
+                    makingCost = chargesValue * weight;
                     subTotal = goldCost + makingCost;
 
                 } else {
-                    // الخيار 2: رسوم التصنيع مبلغ ثابت إجمالي (الطريقة الأصلية)
-                    makingCost = makingChargesValue;
+                    // رسوم التصنيع مبلغ ثابت إجمالي
+                    makingCost = chargesValue;
                     subTotal = goldCost + makingCost;
                 }
                 
@@ -308,7 +308,7 @@
         goldKaratSelect.addEventListener('change', updatePriceBasedOnKarat);
         
         // ربط الأحداث الرئيسية
-        const inputs = [weightInput, goldKaratSelect, vatRateSelect, makingChargesValueInput];
+        const inputs = [weightInput, goldKaratSelect, vatRateSelect];
         inputs.forEach(element => {
             element.addEventListener('input', calculateGoldPrice);
             element.addEventListener('change', calculateGoldPrice); 
@@ -341,4 +341,3 @@
     </script>
 </body>
 </html>
-</div>
